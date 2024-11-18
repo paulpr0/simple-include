@@ -1,8 +1,8 @@
 [package]
 name = "simple-include"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-license-file = "LICENSE"
+license = "MIT"
 description = """A simple tool to include files in other files. Looks for lines with a given prefix and replaces them
 with the contents of the file they point to. Can watch for changes in the source directory and keep the target directory in sync."""
 repository = "https://github.com/paulpr0/simple-include"
@@ -20,3 +20,6 @@ keywords = ["include", "watch", "pre-processor", "preprocessor"]
 clap = { version = "4.5.20", features = ["derive"] }
 notify = "6.1.1"
 walkdir = "2.5"
+
+[dev-dependencies]
+tempfile = "3.2"
