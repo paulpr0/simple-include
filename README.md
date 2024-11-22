@@ -61,3 +61,10 @@ Options:
   -v, --verbose            Verbose output - prints the input and output file paths
   -h, --help               Print help
   -V, --version            Print version
+```
+
+ ## Status
+
+ It works for me... The test cases cover only basic functionality. I have tested it on linux and windows for simple use cases.
+ If you find a bug, please run with the -v flag and (if possible) let me know what the input and output files are, and I will try to fix it.
+ If you are comfortable with rust (or even if you are not, but would like to try), feel free to submit a PR.

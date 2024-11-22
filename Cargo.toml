@@ -1,6 +1,6 @@
 [package]
 name = "simple-include"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 description = """A simple tool to include files in other files. Looks for lines with a given prefix and replaces them
