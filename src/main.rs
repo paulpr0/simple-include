@@ -226,11 +226,7 @@ fn main() -> Result<()> {
 pub fn are_paths_equal(path1: &Path, path2: &Path) -> bool {
     let norm_path1 = normalize_path(path1);
     let norm_path2 = normalize_path(path2);
-    if norm_path1 == norm_path2 {
-        println!("Paths are equal: {:?}, {:?}", path1, path2);
-    } else {
-        println!("Paths are not equal: {:?}, {:?}", path1, path2);
-    }
+
     norm_path1 == norm_path2
 }
 
@@ -277,7 +273,13 @@ pub fn process_file(
     let file = File::open(path);
     if file.is_err() {
         let e = file.err().unwrap();
-        eprintln!("Error opening file for processing: {:?}, {:?}", path, e);
+        if e.kind() == io::ErrorKind::NotFound {
+            if verbose {
+                eprintln!("File not found: {:?}, skipping. If this looks like a temp file, it was probably deleted before we could parse and copy it.", path);
+            }
+        } else {
+            eprintln!("Error opening file for processing: {:?}, {:?}. ", path, e);
+        }
         return Err(e);
     }
 
