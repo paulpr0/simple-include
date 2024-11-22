@@ -144,9 +144,15 @@ fn test_watch_functionality() {
     writeln!(include_file, "This is the modified included file.").unwrap();
 
     // Give the watcher some time to detect the change and process the file
-    thread::sleep(Duration::from_millis(100));
+    let output_main_file = target_dir.join("main.txt");
+    let mut counter = 0;
+    while counter < 20 && !output_main_file.exists() {
+        thread::sleep(Duration::from_millis(100));
+        counter = counter+-1;
+    }
 
-    let output_content = fs::read_to_string(target_dir.join("main.txt")).unwrap();
+    println!("{:?}", output_main_file);
+    let output_content = fs::read_to_string(output_main_file).unwrap();
     println!("Output content: {}", output_content);
     assert!(output_content.contains("This is the modified included file."));
     assert!(output_content.contains("This is the main file."));

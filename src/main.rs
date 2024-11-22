@@ -1,7 +1,8 @@
 use notify::{Event, RecursiveMode, Result, Watcher};
 use std::collections::{HashMap, HashSet};
-use std::fs::{self, File};
+use std::fs::{self, canonicalize, File};
 use std::io::{self, BufRead, Write};
+use std::env::current_dir;
 use std::path::{Component, Path, PathBuf};
 use std::sync::mpsc;
 use walkdir::WalkDir;
@@ -36,11 +37,19 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let src = Path::new(&args.src);
-    let target = Path::new(&args.target);
+    let src = if args.src == "." {&current_dir().unwrap() } else {Path::new(&args.src)};
+    let target = if args.target == "." {&current_dir().unwrap() } else {Path::new(&args.target)};
 
-    let abs_src = fs::canonicalize(Path::new(&args.src))?;
-    let abs_target = fs::canonicalize(Path::new(&args.target))?;
+    if !target.exists() {
+       let res = fs::create_dir_all(target);
+        if res.is_err() {
+            eprintln!("The target directory {:?} does not exist and could not be created.", target);
+            return Err(res.err().unwrap().into());
+        }
+    }
+
+    let abs_src = fs::canonicalize(src)?;
+    let abs_target = fs::canonicalize(target)?;
 
     let mut included_files: HashMap<PathBuf, HashSet<PathBuf>> = HashMap::new();
 
@@ -86,7 +95,7 @@ fn main() -> Result<()> {
     let (tx, rx) = mpsc::channel::<Result<Event>>();
     let mut watcher = notify::recommended_watcher(tx)?;
 
-    watcher.watch(Path::new(src), RecursiveMode::Recursive)?;
+    watcher.watch(Path::new(&abs_src), RecursiveMode::Recursive)?;
 
     // Block forever, handling events as they come in
     for res in rx {
@@ -128,11 +137,13 @@ fn main() -> Result<()> {
                     }
                     if !path.starts_with(&abs_target) {
                         let file = path.clone();
-                        let relative_file = file.strip_prefix(abs_src.clone());
-                        if relative_file.is_err() && args.verbose {
-                            eprintln!("{:?}{:?}{:?}", src, file, relative_file.err());
-                        }
-                        else {
+                        let canon_file = canonicalize(file.clone()).unwrap();
+                        let relative_file = canon_file.strip_prefix(abs_src.clone());
+                        if relative_file.is_err() {
+                            if args.verbose {
+                                eprintln!("{:?}{:?}{:?}", abs_src.clone(), file, relative_file.err());
+                            }
+                        } else {
                             let relative_file = relative_file.unwrap();
                             let target_file = target.join(relative_file);
 
@@ -140,8 +151,10 @@ fn main() -> Result<()> {
                                 Ok(includes) => {
                                     for included in includes.iter() {
                                         let relative_include = included.strip_prefix(abs_src.clone());
-                                        if relative_include.is_err() && args.verbose {
-                                            eprintln!("{:?}{:?}{:?}", src, included, relative_include.err());
+                                        if relative_include.is_err() {
+                                            if args.verbose {
+                                                eprintln!("{:?}{:?}{:?}", src, included, relative_include.err());
+                                            }
                                         } else {
                                             included_files
                                                 .entry(relative_include.unwrap().to_path_buf())
@@ -177,20 +190,18 @@ fn main() -> Result<()> {
                                                 }
                                             },
                                             io::ErrorKind::InvalidData => {
-                                                if args.verbose{
+                                                if args.verbose {
                                                     println!("The file {:?} was included in {:?}, but contains binary data", included_file, file);
                                                 }
                                             }
                                             _ => {
                                                 println!("Error processing file {:?}. Error details: {:?}", included_file, e);
                                             }
-
                                         }
                                     }
                                 }
                             }
                         }
-
                     }
                 });
             }
