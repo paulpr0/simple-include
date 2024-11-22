@@ -64,10 +64,10 @@ fn main() -> Result<()> {
 
     let mut included_files: HashMap<PathBuf, HashSet<PathBuf>> = HashMap::new();
 
-    for file in list_of_paths(&src, &target)? {
+    for file in list_of_paths(&abs_src, &abs_target)? {
         match process_file(
             &file,
-            &target.join(file.clone().strip_prefix(src).unwrap()),
+            &target.join(file.clone().strip_prefix(&abs_src).unwrap()),
             &args.include,
             args.verbose,
         ) {
@@ -226,7 +226,11 @@ fn main() -> Result<()> {
 pub fn are_paths_equal(path1: &Path, path2: &Path) -> bool {
     let norm_path1 = normalize_path(path1);
     let norm_path2 = normalize_path(path2);
-
+    if norm_path1 == norm_path2 {
+        println!("Paths are equal: {:?}, {:?}", path1, path2);
+    } else {
+        println!("Paths are not equal: {:?}, {:?}", path1, path2);
+    }
     norm_path1 == norm_path2
 }
 
