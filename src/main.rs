@@ -1,8 +1,8 @@
 use notify::{Event, RecursiveMode, Result, Watcher};
 use std::collections::{HashMap, HashSet};
+use std::env::current_dir;
 use std::fs::{self, canonicalize, File};
 use std::io::{self, BufRead, Write};
-use std::env::current_dir;
 use std::path::{Component, Path, PathBuf};
 use std::sync::mpsc;
 use walkdir::WalkDir;
@@ -37,13 +37,24 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let src = if args.src == "." {&current_dir().unwrap() } else {Path::new(&args.src)};
-    let target = if args.target == "." {&current_dir().unwrap() } else {Path::new(&args.target)};
+    let src = if args.src == "." {
+        &current_dir().unwrap()
+    } else {
+        Path::new(&args.src)
+    };
+    let target = if args.target == "." {
+        &current_dir().unwrap()
+    } else {
+        Path::new(&args.target)
+    };
 
     if !target.exists() {
-       let res = fs::create_dir_all(target);
+        let res = fs::create_dir_all(target);
         if res.is_err() {
-            eprintln!("The target directory {:?} does not exist and could not be created.", target);
+            eprintln!(
+                "The target directory {:?} does not exist and could not be created.",
+                target
+            );
             return Err(res.err().unwrap().into());
         }
     }
@@ -129,15 +140,15 @@ fn main() -> Result<()> {
                         }
                     });
                     continue;
-                }
-                event.paths.iter().for_each(|path| {
+                } else {
+                    event.paths.iter().for_each(|path| {
                     let path = normalize_path(path);
                     if args.verbose {
-                        println!("File changed: {:?}, src: {:?}", path, abs_src);
+                        println!("File changed: {:?}, src: {:?}, change kind:{:?}", path, abs_src, event.kind);
                     }
                     if !path.starts_with(&abs_target) {
                         let file = path.clone();
-                        let canon_file = canonicalize(file.clone()).unwrap();
+                        let canon_file = canonicalize(file.clone()).unwrap_or(file.clone());
                         let relative_file = canon_file.strip_prefix(abs_src.clone());
                         if relative_file.is_err() {
                             if args.verbose {
@@ -204,6 +215,7 @@ fn main() -> Result<()> {
                         }
                     }
                 });
+                }
             }
             Err(e) => println!("Error watching for changes. Error details: {:?}", e),
         }

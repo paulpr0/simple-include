@@ -148,7 +148,17 @@ fn test_watch_functionality() {
     let mut counter = 0;
     while counter < 20 && !output_main_file.exists() {
         thread::sleep(Duration::from_millis(100));
-        counter = counter+-1;
+        counter = counter + -1;
+    }
+    //Wait for the file to be updated
+    counter = 0;
+    while counter < 10
+        && !fs::read_to_string(&output_main_file)
+            .unwrap()
+            .contains("This is the modified included file.")
+    {
+        thread::sleep(Duration::from_millis(100));
+        counter = counter + 1;
     }
 
     println!("{:?}", output_main_file);
